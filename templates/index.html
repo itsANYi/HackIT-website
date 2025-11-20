@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}首頁 - 黑客IT社{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <img src="{{ url_for('static', filename='images/Logo.svg') }}" alt="黑客IT社" class="hero-logo">
+        <h1 class="hero-title">歡迎來到黑客IT社</h1>
+        <p class="hero-subtitle">探索資安，駭入未來</p>
+        <a href="{{ url_for('installation') }}" class="install-button glass-effect">
+            立即安裝
+            <span class="button-icon">→</span>
+        </a>
+    </div>
+    
+    <div class="floating-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+</div>
+{% endblock %}

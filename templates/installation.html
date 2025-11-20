@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}系統安裝 - 黑客IT社{% endblock %}
+
+{% block content %}
+<div class="installation-container">
+    <div class="installation-window glass-effect">
+        <!-- 步驟 1: 歡迎畫面 -->
+        <div id="step-1" class="install-step active">
+            <div class="install-header">
+                <h2>黑客IT社 安裝程式</h2>
+                <p class="version">版本 2025.1.0X</p>
+            </div>
+            <div class="install-content">
+                <p class="install-text">歡迎使用黑客IT社安裝精靈</p>
+                <p class="install-description">本程式將在您的系統中安裝「黑客IT社」</p>
+                <div class="system-info">
+                    <p><strong>要安裝的系統：</strong>黑客IT社 Ultimate Edition</p>
+                    <p><strong>需求空間：</strong>1 GB 熱情 + 1 TB 創意</p>
+                    <p><strong>安裝時間：</strong>3 秒</p>
+                </div>
+            </div>
+            <div class="install-actions">
+                <button onclick="nextStep(2)" class="btn-primary">下一步</button>
+            </div>
+        </div>
+        
+        <!-- 步驟 2: 使用者條款 -->
+        <div id="step-2" class="install-step">
+            <div class="install-header">
+                <h2>使用者授權合約</h2>
+            </div>
+            <div class="install-content">
+                <div class="license-box">
+                    <h3>黑客IT社 EULA（終端使用者授權協議）</h3>
+                    <p>請仔細閱讀以下條款（或不閱讀，我們不會知道）：</p>
+                    <ul class="license-list">
+                        <li>✓ 您同意將所有bug歸咎於「這不是bug，這是feature」</li>
+                        <li>✓ 您同意在凌晨3點收到社課通知</li>
+                        <li>✓ 您允許我們使用您的腦部數據來改進社團活動</li>
+                        <li>✓ 您同意咖啡因是合法興奮劑且為必需品</li>
+                        <li>✓ 您理解「五分鐘就好」通常意味著五小時</li>
+                        <li>✓ 您接受PHP是世界上最好的語言</li>
+                        <li>✓ 您承認「Hello World」永遠是最感動的程式</li>
+                    </ul>
+                </div>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="agree-terms">
+                    <span>我已閱讀並同意以上所有看起來很專業但其實真的很專業的條款</span>
+                </label>
+            </div>
+            <div class="install-actions">
+                <button onclick="nextStep(1)" class="btn-secondary2">上一步</button>
+                <button onclick="validateTerms()" class="btn-primary2">下一步</button>
+            </div>
+        </div>
+        
+        <!-- 步驟 3: 安裝路徑 -->
+        <div id="step-3" class="install-step">
+            <div class="install-header">
+                <h2>選擇安裝位置</h2>
+            </div>
+            <div class="install-content">
+                <p class="install-text">請選擇黑客IT社的安裝位置：</p>
+                <div class="path-input-group">
+                    <input type="text" id="install-path" value="C:/User/head/腦袋" class="input-field">
+                    <button onclick="validatePath()" class="btn-secondary">瀏覽</button>
+                </div>
+                <div id="path-error" class="error-message" style="display: none;">
+                    ⚠️ 找不到此路徑！您的系統路徑 "C:/User/head/" 缺乏 "腦袋" 資料夾<br>
+                </div>
+                <div class="space-info">
+                    <p>所需空間：1 TB</p>
+                    <p>可用空間：<span id="available-space">0 TB</span></p>
+                </div>
+            </div>
+            <div class="install-actions">
+                <button onclick="nextStep(2)" class="btn-secondary2">上一步</button>
+                <button onclick="checkPath()" class="btn-primary2">確認</button>
+            </div>
+        </div>
+        
+        <!-- 步驟 4: 使用者暱稱 -->
+        <div id="step-4" class="install-step">
+            <div class="install-header">
+                <h2>建立使用者檔案</h2>
+            </div>
+            <div class="install-content">
+                <p class="install-text">請輸入您的代號（暱稱）：</p>
+                <input type="text" id="user-nickname" placeholder="例如：☆㊣↙煞氣a五六↗㊣☆" class="input-field">
+                <div class="nickname-tips">
+                    <p><strong>💡 建議：</strong></p>
+                    <ul>
+                        <li>可以加入數字和特殊符號</li>
+                        <li>最好讓人一看就覺得你很厲害</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="install-actions">
+                <button onclick="nextStep(3)" class="btn-secondary2">上一步</button>
+                <button onclick="validateNickname()" class="btn-primary2">下一步</button>
+            </div>
+        </div>
+        
+        <!-- 步驟 5: 附加選項 -->
+        <div id="step-5" class="install-step">
+            <div class="install-header">
+                <h2>選擇附加元件</h2>
+            </div>
+            <div class="install-content">
+                <p class="install-text">是否一併安裝以下元件？</p>
+                <div class="options-list">
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked>
+                        <span>熬夜精神支援包（含咖啡因補給）</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked>
+                        <span>Debug能力強化模組（可能無效）</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span>社交技能補丁（實驗性功能）</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked>
+                        <span>鍵盤聲音美化工具（讓你打字更有氣勢）</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span>正常作息模式（不推薦安裝）</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked>
+                        <span>Meme 圖庫擴充包（必備）</span>
+                    </label>
+                </div>
+            </div>
+            <div class="install-actions">
+                <button onclick="nextStep(4)" class="btn-secondary2">上一步</button>
+                <button onclick="nextStep(6)" class="btn-primary2">下一步</button>
+            </div>
+        </div>
+        
+        <!-- 步驟 6: 環境檢查 -->
+        <div id="step-6" class="install-step">
+            <div class="install-header">
+                <h2>檢查系統環境</h2>
+            </div>
+            <div class="install-content">
+                <p class="install-text">正在檢查您的系統是否符合安裝需求...</p>
+                <div class="requirements-list">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="req-1">
+                        <span>是否具備良好公民的特質？</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="req-2">
+                        <span>是否願意分享知識與技術？</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="req-3">
+                        <span>是否勇於嘗試新事物？</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="req-4">
+                        <span>是否和AI成為好朋友？</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="req-5">
+                        <span>是否承諾不會用技術做壞事？</span>
+                    </label>
+                </div>
+            </div>
+            <div class="install-actions">
+                <button onclick="nextStep(5)" class="btn-secondary2">上一步</button>
+                <button onclick="validateRequirements()" class="btn-primary2">開始安裝</button>
+            </div>
+        </div>
+        
+        <!-- 步驟 7: 安裝進度 -->
+        <div id="step-7" class="install-step">
+            <div class="install-header">
+                <h2>正在安裝黑客IT社...</h2>
+            </div>
+            <div class="install-content">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <p id="progress-text" class="progress-text">0%</p>
+                </div>
+                <div id="install-status" class="install-status">
+                    正在初始化駭客基因...
+                </div>
+            </div>
+        </div>
+        
+        <!-- 步驟 8: 完成 -->
+        <div id="step-8" class="install-step">
+            <div class="install-header">
+                <h2>安裝完成</h2>
+            </div>
+            <div class="install-content">
+                <div class="success-message">
+                    <p class="success-title">黑客IT社已成功安裝到您的系統中</p>
+                    <p class="success-subtitle">歡迎加入黑客IT社！</p>
+                    <div class="welcome-info">
+                        <p>您現在可以：</p>
+                        <ul>
+                            <li>✓ 參與社團活動，認識志同道合的夥伴</li>
+                            <li>✓ 查看和編輯您的個人資訊</li>
+                            <li>✓ 探索更多有趣的功能</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="install-actions center">
+                <a href="{{ url_for('profile') }}" class="btn-primary2">前往使用者資訊</a>
+                <a href="{{ url_for('activity') }}" class="btn-secondary2">開始社團活動</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentStep = 1;
+let installationData = {};
+
+function nextStep(step) {
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    currentStep = step;
+    document.getElementById(`step-${step}`).classList.add('active');
+}
+
+function validateTerms() {
+    const agreed = document.getElementById('agree-terms').checked;
+    if (!agreed) {
+        alert('請先同意使用者授權合約（雖然你根本沒看完）');
+        return;
+    }
+    nextStep(3);
+}
+
+function checkPath() {
+    const path = document.getElementById('install-path').value;
+    if (path.includes('腦袋')) {
+        document.getElementById('path-error').style.display = 'block';
+    } else if (path.includes('膝蓋') || path.toLowerCase().includes('knee')) {
+        document.getElementById('path-error').style.display = 'none';
+        document.getElementById('available-space').textContent = '無限大 ∞';
+        setTimeout(() => nextStep(4), 1000);
+    } else {
+        alert('請輸入有效的安裝路徑！');
+    }
+}
+
+function validatePath() {
+    alert('💡 提示：試試看輸入「膝蓋」');
+}
+
+function validateNickname() {
+    const nickname = document.getElementById('user-nickname').value.trim();
+    if (!nickname) {
+        alert('請輸入您的代號！');
+        return;
+    }
+    installationData.nickname = nickname;
+    nextStep(5);
+}
+
+function validateRequirements() {
+    const req1 = document.getElementById('req-1').checked;
+    const req2 = document.getElementById('req-2').checked;
+    const req3 = document.getElementById('req-3').checked;
+    const req4 = document.getElementById('req-4').checked;
+    const req5 = document.getElementById('req-5').checked;
+    
+    if (!req1 || !req2 || !req3 || !req4 || !req5) {
+        alert('請確認所有環境需求！');
+        return;
+    }
+    
+    nextStep(7);
+    startInstallation();
+}
+
+function startInstallation() {
+    const messages = [
+        '正在初始化駭客基因...',
+        '正在下載海量的StackOverflow資料...',
+        '正在安裝咖啡因依賴套件...',
+        '正在配置鍵盤敲擊音效...',
+        '正在載入Meme資料庫...',
+        '正在優化Debug能力...',
+        '正在建立GitHub連結...',
+        '正在啟用熬夜模式...',
+        '正在安裝「這不是bug這是feature」防護牆...',
+        '正在完成最後設置...'
+    ];
+    
+    let progress = 0;
+    let messageIndex = 0;
+    
+    const interval = setInterval(() => {
+        progress += 10;
+        document.getElementById('progress-fill').style.width = progress + '%';
+        document.getElementById('progress-text').textContent = progress + '%';
+        
+        if (messageIndex < messages.length) {
+            document.getElementById('install-status').textContent = messages[messageIndex];
+            messageIndex++;
+        }
+        
+        if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+                saveInstallation();
+            }, 1000);
+        }
+    }, 500);
+}
+
+async function saveInstallation() {
+    const response = await fetch('/save-installation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(installationData)
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+        nextStep(8);
+    }
+}
+</script>
+{% endblock %}

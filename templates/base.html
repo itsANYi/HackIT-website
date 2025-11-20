@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}黑客IT社{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if session.user_id %}
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <!-- <img src="{{ url_for('static', filename='images/LogoSmall.svg') }}" alt="黑客IT社" class="logo-small"> -->
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="nav-link">首頁</a>
+                <a href="{{ url_for('installation') }}" class="nav-link">社團介紹</a>
+                <a href="{{ url_for('activity') }}" class="nav-link">社團活動</a>
+                <a href="{{ url_for('profile') }}" class="nav-link">使用者資訊</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">登出</a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- 移到 body 結束前，並確保在 extra_js 之前載入 -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

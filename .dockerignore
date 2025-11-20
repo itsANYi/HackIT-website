@@ -1,0 +1,22 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Git
+.git
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database files
+hackers_it.db
+
+# Local avatars (we create a folder inside container)
+static/images/avatars/

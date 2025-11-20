@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}社團活動 - 黑客IT社{% endblock %}
+
+{% block content %}
+<div class="activity-container">
+    <div id="lobby" class="activity-card glass-effect">
+        <h1 class="activity-title">🎮 破冰問答遊戲</h1>
+        <p class="activity-description">
+            隨機配對一位社員，透過一問一答的方式互相認識！<br>
+            每輪只能問對方一個問題，等待對方回答後才能進行下一輪。
+        </p>
+        
+        <div class="game-rules">
+            <h3>遊戲規則：</h3>
+            <ul>
+                <li>🎯 系統會隨機幫你配對一位社員</li>
+                <li>💬 每輪你可以問對方一個問題或回答對方的問題</li>
+                <li>⏭️ 雙方都回答後，點擊「下一輪」繼續遊戲</li>
+                <li>🏁 想結束時點擊「遊戲結束」</li>
+            </ul>
+        </div>
+        
+        <button id="start-game" onclick="findMatch()" class="btn-primary btn-large">
+            開始尋找配對
+        </button>
+        
+        <div id="waiting" class="waiting-message" style="display: none;">
+            <div class="spinner"></div>
+            <p>正在尋找配對對象...</p>
+        </div>
+    </div>
+    
+    <div id="game-room" class="activity-card glass-effect" style="display: none;">
+        <div class="game-header">
+            <h2>🎮 遊戲進行中</h2>
+            <div class="game-info">
+                <p>配對對象: <strong id="partner-name"></strong></p>
+                <p>當前輪次: <strong id="current-round">1</strong></p>
+            </div>
+        </div>
+        
+        <div class="chat-container">
+            <div id="messages" class="messages-box"></div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="message-input" class="input-field" placeholder="輸入你的問題或回答..." onkeypress="handleKeyPress(event)">
+            <button id="question-btn" onclick="sendMessage('question')" class="btn-primary">❓ 提問</button>
+            <button id="answer-btn" onclick="sendMessage('answer')" class="btn-primary">💬 回答</button>
+        </div>
+        
+        <div class="game-controls">
+            <button onclick="nextRound()" class="btn-secondary">⏭️ 下一輪</button>
+            <button onclick="endGame()" class="btn-danger">🏁 遊戲結束</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let socket;
+let currentRoom = null;
+let playerRole = null;
+let localRoundState = {
+    askedThisRound: false,
+    answeredThisRound: false,
+    roundComplete: false,
+    readyForNext: false
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[v0] Page loaded, initializing socket...');
+    
+    if (typeof io === 'undefined') {
+        console.error('[v0] Socket.IO library not loaded!');
+        alert('Socket.IO 未載入，請重新整理頁面');
+        return;
+    }
+    
+    socket = io();
+    
+    socket.on('connect', () => {
+        console.log('[v0] Socket connected successfully, ID:', socket.id);
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('[v0] Socket disconnected');
+    });
+    
+    socket.on('error', (data) => {
+        console.error('[v0] Socket error:', data);
+        alert(data.message || '發生錯誤');
+    });
+    
+    socket.on('waiting', (data) => {
+        console.log('[v0] Waiting for match:', data.message);
+        document.getElementById('start-game').style.display = 'none';
+        document.getElementById('waiting').style.display = 'block';
+    });
+
+    socket.on('match_found', (data) => {
+        console.log('[v0] Match found:', data);
+        currentRoom = data.room_id;
+        playerRole = data.you_are;
+        
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('game-room').style.display = 'block';
+        document.getElementById('partner-name').textContent = data.partner;
+        
+        addSystemMessage(`✨ 配對成功！你的對手是 ${data.partner}`);
+        addSystemMessage('💡 開始互相提問吧！每輪你需要提問一次並回答對方一次。');
+        
+        resetLocalState();
+        updateUI();
+    });
+
+    socket.on('receive_message', (data) => {
+        addMessage(data.from, data.message, false, data.type);
+    });
+    
+    socket.on('message_blocked', (data) => {
+        alert(data.message);
+    });
+    
+    socket.on('round_complete', (data) => {
+        localRoundState.roundComplete = true;
+        addSystemMessage('🎉 ' + data.message);
+        updateUI();
+    });
+    
+    socket.on('player_ready', (data) => {
+        addSystemMessage(`⏳ ${data.player} 已準備好進入下一輪`);
+    });
+
+    socket.on('round_updated', (data) => {
+        document.getElementById('current-round').textContent = data.round;
+        addSystemMessage(`🎯 進入第 ${data.round} 輪`);
+        resetLocalState();
+        updateUI();
+    });
+
+    socket.on('game_ended', (data) => {
+        addSystemMessage('🏁 ' + data.message);
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    });
+});
+
+function resetLocalState() {
+    localRoundState = {
+        askedThisRound: false,
+        answeredThisRound: false,
+        roundComplete: false,
+        readyForNext: false
+    };
+}
+
+function sendMessage(type) {
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    
+    if (!message || !currentRoom || !socket) return;
+    
+    // 檢查是否可以發送
+    if (type === 'question' && localRoundState.askedThisRound) {
+        alert('本輪你已經提問過了！');
+        return;
+    }
+    if (type === 'answer' && localRoundState.answeredThisRound) {
+        alert('本輪你已經回答過了！');
+        return;
+    }
+    
+    socket.emit('send_message', {
+        room_id: currentRoom,
+        message: message,
+        type: type
+    });
+    
+    // 更新本地狀態
+    if (type === 'question') {
+        localRoundState.askedThisRound = true;
+        addMessage('你', message, true, 'question');
+    } else {
+        localRoundState.answeredThisRound = true;
+        addMessage('你', message, true, 'answer');
+    }
+    
+    input.value = '';
+    updateUI();
+}
+
+function handleKeyPress(event) {
+    if (event.key === 'Enter') {
+        // 預設發送問題，除非已經問過了就發送回答
+        const type = localRoundState.askedThisRound ? 'answer' : 'question';
+        sendMessage(type);
+    }
+}
+
+function addMessage(sender, message, isMe, type) {
+    const messagesBox = document.getElementById('messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isMe ? 'message-sent' : 'message-received'}`;
+    
+    const typeLabel = type === 'question' ? '❓ 提問' : '💬 回答';
+    
+    messageDiv.innerHTML = `
+        <div class="message-sender">${sender} <span class="message-type">${typeLabel}</span></div>
+        <div class="message-content">${message}</div>
+    `;
+    messagesBox.appendChild(messageDiv);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function addSystemMessage(message) {
+    const messagesBox = document.getElementById('messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message message-system';
+    messageDiv.textContent = message;
+    messagesBox.appendChild(messageDiv);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function updateUI() {
+    const input = document.getElementById('message-input');
+    const questionBtn = document.getElementById('question-btn');
+    const answerBtn = document.getElementById('answer-btn');
+    const nextBtn = document.querySelector('.game-controls button:first-child');
+    
+    // 如果輪次完成，禁用輸入和發送按鈕
+    if (localRoundState.roundComplete) {
+        input.disabled = true;
+        questionBtn.disabled = true;
+        answerBtn.disabled = true;
+        input.placeholder = '等待雙方按下「下一輪」...';
+    } else {
+        input.disabled = false;
+        questionBtn.disabled = localRoundState.askedThisRound;
+        answerBtn.disabled = localRoundState.answeredThisRound;
+        
+        if (!localRoundState.askedThisRound) {
+            input.placeholder = '輸入你的問題...';
+        } else if (!localRoundState.answeredThisRound) {
+            input.placeholder = '回答對方的問題...';
+        }
+    }
+    
+    // 更新下一輪按鈕狀態
+    if (localRoundState.readyForNext) {
+        nextBtn.disabled = true;
+        nextBtn.textContent = '⏳ 等待對方...';
+    } else if (localRoundState.roundComplete) {
+        nextBtn.disabled = false;
+        nextBtn.textContent = '⏭️ 下一輪';
+    } else {
+        nextBtn.disabled = true;
+        nextBtn.textContent = '⏭️ 下一輪（尚未完成）';
+    }
+}
+
+function nextRound() {
+    if (!currentRoom || !socket || !localRoundState.roundComplete) return;
+    
+    localRoundState.readyForNext = true;
+    socket.emit('next_round', { room_id: currentRoom });
+    updateUI();
+}
+
+function endGame() {
+    if (!currentRoom || !socket) return;
+    if (confirm('確定要結束遊戲嗎？')) {
+        socket.emit('end_game', { room_id: currentRoom });
+    }
+}
+
+function findMatch() {
+    console.log('[v0] findMatch called');
+    
+    if (!socket) {
+        console.error('[v0] Socket not initialized');
+        alert('連接未建立，請重新整理頁面');
+        return;
+    }
+    
+    if (!socket.connected) {
+        console.error('[v0] Socket not connected');
+        alert('伺服器未連接，請稍後再試');
+        return;
+    }
+    
+    console.log('[v0] Emitting find_match event');
+    socket.emit('find_match');
+    
+    document.getElementById('start-game').style.display = 'none';
+    document.getElementById('waiting').style.display = 'block';
+}
+</script>
+{% endblock %}

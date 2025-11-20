@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}登入 - 黑客IT社{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card glass-effect">
+        <img src="{{ url_for('static', filename='images/LogoSmall.svg') }}" alt="黑客IT社" class="login-logo">
+        <h1 class="login-title">黑客IT社</h1>
+        
+        <div id="login-form" class="auth-form">
+            <h2>登入系統</h2>
+            <input type="text" id="login-username" placeholder="使用者帳號" class="input-field" autocomplete="username">
+            <input type="password" id="login-password" placeholder="密碼" class="input-field" autocomplete="current-password">
+            <button onclick="handleLogin()" class="btn-primary">登入</button>
+            <p class="switch-auth">還沒有帳號？ <a href="#" onclick="showRegister()">立即註冊</a></p>
+        </div>
+        
+        <div id="register-form" class="auth-form" style="display: none;">
+            <h2>註冊帳號</h2>
+            <input type="text" id="register-username" placeholder="使用者帳號" class="input-field" autocomplete="username">
+            <input type="password" id="register-password" placeholder="密碼" class="input-field" autocomplete="new-password">
+            <input type="password" id="register-confirm" placeholder="確認密碼" class="input-field" autocomplete="new-password">
+            <button onclick="handleRegister()" class="btn-primary">註冊</button>
+            <p class="switch-auth">已有帳號？ <a href="#" onclick="showLogin()">返回登入</a></p>
+        </div>
+        
+        <div id="error-message" class="error-message" style="display: none;"></div>
+    </div>
+</div>
+
+<script>
+function showRegister() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+    setError('');
+}
+
+function showLogin() {
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('login-form').style.display = 'block';
+    setError('');
+}
+
+function setError(msg) {
+    const el = document.getElementById('error-message');
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+}
+
+async function handleLogin() {
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    
+    if (!username || !password) {
+        setError('請輸入帳號和密碼');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
+    
+    const response = await fetch('/login', {
+        method: 'POST',
+        body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        window.location.href = '/';
+    } else {
+        setError(data.message || '發生錯誤');
+    }
+}
+
+async function handleRegister() {
+    const username = document.getElementById('register-username').value;
+    const password = document.getElementById('register-password').value;
+    const confirm = document.getElementById('register-confirm').value;
+    
+    if (!username || !password || !confirm) {
+        setError('請填寫所有欄位');
+        return;
+    }
+    
+    if (password !== confirm) {
+        setError('密碼不一致');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
+    
+    const response = await fetch('/register', {
+        method: 'POST',
+        body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        window.location.href = '/';
+    } else {
+        setError(data.message || '發生錯誤');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}使用者資訊 - 黑客IT社{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-card glass-effect">
+        <h1 class="profile-title">使用者資訊檔案</h1>
+        
+        <div class="profile-section">
+            <div class="avatar-section">
+                <div class="avatar-display">
+                    {% if user[4] and user[4] != 'default-avatar.png' %}
+                    <img id="avatar-img" src="{{ url_for('static', filename='images/avatars/' ~ user[4]) }}" alt="avatar" class="avatar-img">
+                    {% else %}
+                    <div class="avatar-placeholder">
+                        <span class="avatar-text">{{ user[1][0].upper() }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <button class="btn-secondary" onclick="triggerAvatarInput()">更換頭貼</button>
+                <input type="file" id="avatar-input" accept="image/*" style="display:none">
+            </div>
+            
+            <div class="info-section">
+                <div class="info-group">
+                    <label class="info-label">使用者帳號</label>
+                    <input type="text" value="{{ user[1] }}" class="input-field" disabled>
+                </div>
+                
+                <div class="info-group">
+                    <label class="info-label">密碼</label>
+                    <input type="password" value="••••••••" class="input-field" disabled>
+                    <button class="btn-link" onclick="changePassword()">修改密碼</button>
+                </div>
+                
+                <div class="info-group">
+                    <label class="info-label">暱稱（駭客代號）</label>
+                    <input type="text" id="nickname" value="{{ user[3] or '' }}" class="input-field" placeholder="輸入你的酷炫暱稱">
+                </div>
+                
+                <div class="info-group">
+                    <label class="info-label">興趣</label>
+                    <textarea id="interests" class="textarea-field" placeholder="例如：寫程式、打CTF、喝咖啡、修bug...">{{ user[5] or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="profile-section">
+            <h2 class="section-title">有趣的問答題</h2>
+            <p class="section-subtitle">讓大家更了解你！</p>
+            
+            <div class="question-group">
+                <label class="question-label">1. 1-5 分，覺得自己程式能力是幾分？</label>
+                <input type="text" id="question1" value="{{ user[6] or '' }}" class="input-field" placeholder="沒說不能打 6 分喔">
+            </div>
+            
+            <div class="question-group">
+                <label class="question-label">2. 你最搞不懂的東西？</label>
+                <input type="text" id="question2" value="{{ user[7] or '' }}" class="input-field" placeholder="新北耶誕城？">
+            </div>
+            
+            <div class="question-group">
+                <label class="question-label">3. 希望在社團中學到什麼？</label>
+                <input type="text" id="question3" value="{{ user[8] or '' }}" class="input-field" placeholder="怎麼盜取別人帳號？沒有 我們可是好駭客">
+            </div>
+            <div class="question-group">
+                <label class="question-label">3. 對社團有什麼期待？</label>
+                <input type="text" id="question3" value="{{ user[8] or '' }}" class="input-field" placeholder="可以點完名就跑掉？ 不 ~~~">
+            </div>
+            <div class="question-group">
+                <label class="question-label">4. 用一個名詞形容自己？</label>
+                <input type="text" id="question3" value="{{ user[8] or '' }}" class="input-field" placeholder="紅色鼻子?">
+            </div>
+        </div>
+        
+        <div class="profile-actions">
+            <button onclick="saveProfile()" class="btn-primary">儲存資料</button>
+            <p class="auto-save-hint">資料會在你輸入時自動儲存</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let saveTimeout;
+
+// 自動儲存功能
+['nickname', 'interests', 'question1', 'question2', 'question3'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveProfile, 1000);
+    });
+});
+
+async function saveProfile() {
+    const data = {
+        nickname: document.getElementById('nickname').value,
+        interests: document.getElementById('interests').value,
+        question1: document.getElementById('question1').value,
+        question2: document.getElementById('question2').value,
+        question3: document.getElementById('question3').value
+    };
+    
+    const response = await fetch('/update-profile', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+        showNotification('✓ 資料已儲存');
+    }
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 2000);
+}
+
+function changeAvatar() {
+    // legacy fallback
+    triggerAvatarInput();
+}
+
+function triggerAvatarInput() {
+    const input = document.getElementById('avatar-input');
+    input.click();
+}
+
+document.getElementById('avatar-input').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const res = await fetch('/upload-avatar', {
+        method: 'POST',
+        body: formData
+    });
+
+    const data = await res.json();
+    if (data.success) {
+        // 更新畫面上的頭貼
+        let img = document.getElementById('avatar-img');
+        if (!img) {
+            // 如果原本是 placeholder，替換它
+            const display = document.querySelector('.avatar-display');
+            display.innerHTML = `<img id="avatar-img" src="${data.avatar}" alt="avatar" class="avatar-img">`;
+        } else {
+            img.src = data.avatar;
+        }
+        showNotification('✓ 頭貼已上傳');
+    } else {
+        alert(data.message || '上傳失敗');
+    }
+});
+
+function changePassword() {
+    // 依序要求舊密碼與新密碼（簡單實作，若需更好 UX 可改為對話框）
+    const oldPassword = prompt('請輸入目前密碼：');
+    if (!oldPassword) return;
+    const newPassword = prompt('請輸入新的密碼：');
+    if (!newPassword) return;
+    const confirmPassword = prompt('請再次輸入新的密碼以確認：');
+    if (newPassword !== confirmPassword) {
+        alert('兩次輸入的密碼不一致');
+        return;
+    }
+
+    (async () => {
+        const res = await fetch('/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showNotification('✓ 密碼已更新');
+        } else {
+            alert(data.message || '更新失敗');
+        }
+    })();
+}
+</script>
+{% endblock %}

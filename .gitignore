@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtualenvs
+venv/
+.venv/
+env/
+ENV/
+
+# Byte-compiled
+*.egg-info/
+*.eggs/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local database
+hackers_it.db
+
+# Uploaded avatars (persist separately or via volume)
+static/images/avatars/
+
+# Environment / credentials
+.env
+.env.*
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+
+# Node
+node_modules/
+
+# Build
+dist/
+build/
+

@@ -1,6 +1,7 @@
 # 黑客IT社 網站
 
 一個使用 Flask 框架建立的互動式社團網站，具有 Apple 風格的設計。
+點這裡進入網站：https://saihs-hackit.eliaschen.dev/login 
 
 ## 功能特色
 

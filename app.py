@@ -239,6 +239,7 @@ def activity():
 # WebSocket 事件處理
 waiting_users = []
 active_games = {}
+user_room_map = {}
 
 @socketio.on('find_match')
 def handle_find_match():
@@ -276,6 +277,9 @@ def handle_find_match():
                 'player2_ready': False
             }
         }
+        # map users to room so they can reconnect
+        user_room_map[partner['user_id']] = room_id
+        user_room_map[user_id] = room_id
         
         join_room(room_id, sid=partner['sid'])
         join_room(room_id, sid=request.sid)
@@ -299,6 +303,55 @@ def handle_find_match():
             'sid': request.sid
         })
         emit('waiting', {'message': '正在尋找配對對象...'})
+
+
+@socketio.on('connect')
+def handle_connect():
+    user_id = session.get('user_id')
+    if not user_id:
+        return
+
+    # If user has an active room, re-associate this sid and join the room
+    room_id = user_room_map.get(user_id)
+    if room_id and room_id in active_games:
+        game = active_games[room_id]
+        # determine player role
+        if game['player1']['user_id'] == user_id:
+            player_key = 'player1'
+            other_key = 'player2'
+        else:
+            player_key = 'player2'
+            other_key = 'player1'
+
+        # update sid and join room
+        game[player_key]['sid'] = request.sid
+        join_room(room_id, sid=request.sid)
+
+        # prepare local state for this player
+        local_state = {
+            'askedThisRound': game['round_state'].get(f"{player_key}_asked", False),
+            'answeredThisRound': game['round_state'].get(f"{player_key}_answered", False),
+            'roundComplete': False,
+            'readyForNext': game['round_state'].get(f"{player_key}_ready", False)
+        }
+        # compute roundComplete
+        rs = game['round_state']
+        local_state['roundComplete'] = (rs['player1_asked'] and rs['player1_answered'] and rs['player2_asked'] and rs['player2_answered'])
+
+        # send reconnect state only to this sid
+        emit('reconnect_state', {
+            'room_id': room_id,
+            'partner': game[other_key]['username'],
+            'you_are': player_key,
+            'round': game['round'],
+            'messages': game.get('messages', []),
+            'localState': local_state
+        }, room=request.sid)
+
+        # notify other player that this user reconnected
+        other_sid = game[other_key].get('sid')
+        if other_sid:
+            emit('player_reconnected', {'player': game[player_key]['username']}, room=other_sid)
 
 @socketio.on('send_message')
 def handle_message(data):
@@ -337,6 +390,9 @@ def handle_message(data):
         }, room=request.sid)
         return
     
+    # store message in game history
+    game['messages'].append({'from': session.get('username'), 'message': message, 'type': message_type})
+
     # 發送訊息
     emit('receive_message', {
         'message': message,
@@ -404,10 +460,27 @@ def handle_end_game(data):
         del active_games[room_id]
 
 @socketio.on('disconnect')
+
 def handle_disconnect():
     global waiting_users
     user_id = session.get('user_id')
+    # remove from waiting list
     waiting_users = [u for u in waiting_users if u['user_id'] != user_id]
+
+    # if user was in an active game, mark their sid as None and notify partner
+    room_id = user_room_map.get(user_id)
+    if room_id and room_id in active_games:
+        game = active_games[room_id]
+        if game['player1']['user_id'] == user_id:
+            game['player1']['sid'] = None
+            other_sid = game['player2'].get('sid')
+            if other_sid:
+                emit('partner_disconnected', {'message': '對手已離線'}, room=other_sid)
+        elif game['player2']['user_id'] == user_id:
+            game['player2']['sid'] = None
+            other_sid = game['player1'].get('sid')
+            if other_sid:
+                emit('partner_disconnected', {'message': '對手已離線'}, room=other_sid)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)

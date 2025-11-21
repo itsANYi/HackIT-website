@@ -43,16 +43,16 @@
         <div class="chat-container">
             <div id="messages" class="messages-box"></div>
         </div>
-        
-        <div class="input-container">
+        <div>
             <input type="text" id="message-input" class="input-field" placeholder="輸入你的問題或回答..." onkeypress="handleKeyPress(event)">
+        </div>
+        <div class="input-container">
             <button id="question-btn" onclick="sendMessage('question')" class="btn-primary">❓ 提問</button>
             <button id="answer-btn" onclick="sendMessage('answer')" class="btn-primary">💬 回答</button>
-        </div>
-        
+        </div>        
         <div class="game-controls">
-            <button onclick="nextRound()" class="btn-secondary">⏭️ 下一輪</button>
-            <button onclick="endGame()" class="btn-danger">🏁 遊戲結束</button>
+            <button onclick="nextRound()" class="btn-secondary2">下一輪</button>
+            <button onclick="endGame()" class="btn-danger">遊戲結束</button>
         </div>
     </div>
 </div>
@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     socket = io();
+    const currentUser = "{{ session.username if session.username else '' }}";
     
     socket.on('connect', () => {
         console.log('[v0] Socket connected successfully, ID:', socket.id);
@@ -146,6 +147,53 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             location.reload();
         }, 2000);
+    });
+
+    // When reconnecting, server will send full state
+    socket.on('reconnect_state', (data) => {
+        console.log('[v0] Reconnect state received', data);
+        currentRoom = data.room_id;
+        playerRole = data.you_are;
+
+        // show game UI and populate state
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('game-room').style.display = 'block';
+        document.getElementById('partner-name').textContent = data.partner;
+        document.getElementById('current-round').textContent = data.round;
+
+        // restore chat history
+        const messagesBox = document.getElementById('messages');
+        messagesBox.innerHTML = '';
+        (data.messages || []).forEach(m => {
+            const isMe = m.from === currentUser;
+            addMessage(m.from, m.message, isMe, m.type);
+        });
+
+        // restore local round state
+        localRoundState.askedThisRound = !!data.localState.askedThisRound;
+        localRoundState.answeredThisRound = !!data.localState.answeredThisRound;
+        localRoundState.roundComplete = !!data.localState.roundComplete;
+        localRoundState.readyForNext = !!data.localState.readyForNext;
+
+        updateUI();
+        addSystemMessage('🔄 已恢復連線，遊戲狀態已復原');
+    });
+
+    socket.on('partner_disconnected', (data) => {
+        addSystemMessage('⚠️ 對手已斷線，正在等待對方回來...');
+        // disable inputs while waiting
+        const input = document.getElementById('message-input');
+        const questionBtn = document.getElementById('question-btn');
+        const answerBtn = document.getElementById('answer-btn');
+        if (input) input.disabled = true;
+        if (questionBtn) questionBtn.disabled = true;
+        if (answerBtn) answerBtn.disabled = true;
+    });
+
+    socket.on('player_reconnected', (data) => {
+        addSystemMessage(`✅ ${data.player} 已重新連線`);
+        // allow UI to re-evaluate (server will send reconnect_state to the reconnected client)
+        updateUI();
     });
 });
 
@@ -255,10 +303,10 @@ function updateUI() {
         nextBtn.textContent = '⏳ 等待對方...';
     } else if (localRoundState.roundComplete) {
         nextBtn.disabled = false;
-        nextBtn.textContent = '⏭️ 下一輪';
+        nextBtn.textContent = '下一輪';
     } else {
         nextBtn.disabled = true;
-        nextBtn.textContent = '⏭️ 下一輪（尚未完成）';
+        nextBtn.textContent = '下一輪（尚未完成）';
     }
 }
 
